@@ -5,13 +5,17 @@
 #include "scan.h"
 using namespace std;
 
-
+/*
+Dictionary: 
+SL - stmt_list
+S -stmt
+*/
 static token input_token;
 
 
 
 const char* names[] = {"read", "write", "id", "literal", "gets",
-                       "add", "sub", "mul", "div", "lparen", "rparen", "eof"};
+                       "add", "sub", "mul", "div", "lparen", "rparen", "eof","if","while"};
 
 void program ();
 void stmt_list ();
@@ -52,6 +56,9 @@ void program () {
             stmt_list ();
             match (t_eof);
             break;
+    // MEIWEN: adding if and while conditions
+        case t_if:
+        case t_while:
         default: error ();
     }
 }
@@ -90,6 +97,21 @@ void stmt () {
             match (t_write);
             expr ();
             break;
+        case t_if:
+            count << "predict stmt --> if expr\n";
+            match(t_if);
+            // TODO: need to initiate C prouction here
+            c();
+            stmt_list();
+            match(t_eof);
+            break;
+        case t_while:
+            count << "predict stmt --> while expr\n"
+            match(t_while);
+            c();
+            stmt_list();
+            match(t_eof);
+            break;
         default: error ();
     }
 }
@@ -121,6 +143,8 @@ void term_tail () {
         case t_id:
         case t_read:
         case t_write:
+        case t_if:
+        case t_while:
         case t_eof:
             cout << "predict term_tail --> epsilon\n";
             break;          /*  epsilon production */
@@ -200,7 +224,7 @@ void add_op () {
 void mul_op () {
     switch (input_token) {
         case t_mul:
-            cout << ("predict mul_op --> mul\n");
+            cout << ("predict mu_l_op --> mul\n");
             match (t_mul);
             break;
         case t_div:
