@@ -30,8 +30,10 @@ token scan() {
         token_image[i] = '\0';
         if (!strcmp(token_image, "read")) return t_read;
         else if (!strcmp(token_image, "write")) return t_write;
-        else if (!strcmp(token_image, "while")) return t_write;
-        else if (!strcmp(token_image, "if")) return t_write;
+        else if (!strcmp(token_image, "while")) return t_while;
+        else if (!strcmp(token_image, "if")) return t_if;
+        else if (!strcmp(token_image, "end")) return t_end;
+
         else return t_id;
     }
     else if (isdigit(c)) {
