@@ -207,25 +207,7 @@ void factor () {
     }
 }
 
-void condition(){
-    switch (input_token) {
-        case t_id :
-            cout << ("predict factor --> id\n");
-            match (t_id);
-            break;
-        case t_literal:
-            cout << ("predict factor --> literal\n");
-            match (t_literal);
-            break;
-        case t_lparen:
-            cout << ("predict factor --> lparen expr rparen\n");
-            match (t_lparen);
-            expr ();
-            match (t_rparen);
-            break;
-        default: error ();
-    }
-}
+
 
 void add_op () {
     switch (input_token) {
