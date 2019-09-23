@@ -98,7 +98,7 @@ void stmt () {
             expr ();
             break;
         case t_if:
-            count << "predict stmt --> if expr\n";
+            cout << "predict stmt --> if expr\n";
             match(t_if);
             // TODO: need to initiate C prouction here
             c();
@@ -106,7 +106,7 @@ void stmt () {
             match(t_eof);
             break;
         case t_while:
-            count << "predict stmt --> while expr\n"
+            cout << "predict stmt --> while expr\n";
             match(t_while);
             c();
             stmt_list();
@@ -224,7 +224,7 @@ void add_op () {
 void mul_op () {
     switch (input_token) {
         case t_mul:
-            cout << ("predict mu_l_op --> mul\n");
+            cout << ("predict mul_op --> mul\n");
             match (t_mul);
             break;
         case t_div:
