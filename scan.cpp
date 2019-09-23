@@ -1,7 +1,7 @@
 #include<iostream>  
+#include <string.h>
 
 #include "scan.h"
-#include <string.h>
 
 using namespace std;
 
@@ -30,6 +30,10 @@ token scan() {
         token_image[i] = '\0';
         if (!strcmp(token_image, "read")) return t_read;
         else if (!strcmp(token_image, "write")) return t_write;
+        else if (!strcmp(token_image, "while")) return t_while;
+        else if (!strcmp(token_image, "if")) return t_if;
+        else if (!strcmp(token_image, "end")) return t_end;
+
         else return t_id;
     }
     else if (isdigit(c)) {
@@ -55,6 +59,42 @@ token scan() {
         case '/': c = getchar(); return t_div;
         case '(': c = getchar(); return t_lparen;
         case ')': c = getchar(); return t_rparen;
+        case '<': 
+            if((c = getchar()) == '='){
+                c = getchar();
+                return t_stq;
+            }
+            else {
+                c = getchar();
+                return t_st;
+            };
+        case '>': 
+            if((c = getchar()) == '='){
+                c = getchar();
+                return t_gtq;
+            }
+            else {
+                c = getchar();
+                return t_gt;
+            }; 
+        case '=': 
+            if((c = getchar()) == '='){
+                c = getchar();
+                return t_eqeq;
+            }
+            else {
+                cout << stderr << "error\n";
+                exit(1);
+            };
+        case '!': 
+            if((c = getchar()) == '='){
+                c = getchar();
+                return t_neq;
+            }
+            else {
+                cout << stderr << "error\n";
+                exit(1);
+            };                               
         default:
             cout << ("error\n");
             exit(1);
