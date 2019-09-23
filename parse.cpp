@@ -101,14 +101,14 @@ void stmt () {
             cout << "predict stmt --> if expr\n";
             match(t_if);
             // TODO: need to initiate C prouction here
-            c();
+            //c();
             stmt_list();
             match(t_eof);
             break;
         case t_while:
             cout << "predict stmt --> while expr\n";
             match(t_while);
-            c();
+           // c();
             stmt_list();
             match(t_eof);
             break;
@@ -188,6 +188,26 @@ void factor_tail () {
 }
 
 void factor () {
+    switch (input_token) {
+        case t_id :
+            cout << ("predict factor --> id\n");
+            match (t_id);
+            break;
+        case t_literal:
+            cout << ("predict factor --> literal\n");
+            match (t_literal);
+            break;
+        case t_lparen:
+            cout << ("predict factor --> lparen expr rparen\n");
+            match (t_lparen);
+            expr ();
+            match (t_rparen);
+            break;
+        default: error ();
+    }
+}
+
+void condition(){
     switch (input_token) {
         case t_id :
             cout << ("predict factor --> id\n");
