@@ -21,13 +21,16 @@ void program ();
 void stmt_list ();
 void stmt ();
 void expr ();
+void cond();
 void term_tail ();
 void term ();
 void factor_tail ();
 void factor ();
 void add_op ();
 void mul_op ();
+void rela_op();
 void match();
+
 
 void error () {
     cout << "Please provide the number of nodes: ";
@@ -101,14 +104,14 @@ void stmt () {
             cout << "predict stmt --> if expr\n";
             match(t_if);
             // TODO: need to initiate C prouction here
-            c();
+            //c();
             stmt_list();
             match(t_eof);
             break;
         case t_while:
             cout << "predict stmt --> while expr\n";
             match(t_while);
-            c();
+            //c();
             stmt_list();
             match(t_eof);
             break;
@@ -129,6 +132,13 @@ void expr () {
     }
 }
 
+// void cond (){
+//     switch(input_token){
+//         case t_id:
+//         case t_literal:
+//         case t_lparen:
+//     }
+// }
 
 void term_tail () {
     switch (input_token) {
@@ -235,6 +245,34 @@ void mul_op () {
     }
 }
 
+void rela_op() {
+    switch (input_token){
+        case t_eqeq:
+            cout << ("predict rela_op --> eqeq\n");
+            match (t_eqeq);
+            break;
+        case t_neq:
+            cout << ("predict rela_op --> neq\n");
+            match (t_neq);
+            break;
+        case t_gt:
+            cout << ("predict rela_op --> gt\n");
+            match (t_gt);
+            break;
+        case t_st:
+            cout << ("predict rela_op --> st\n");
+            match (t_st);
+            break;
+       case t_gtq:
+            cout << ("predict rela_op --> gta\n");
+            match (t_gtq);
+            break;   
+       case t_stq:
+            cout << ("predict rela_op --> stq\n");
+            match (t_stq);
+            break;     
+    }
+}
 
 
 
