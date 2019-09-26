@@ -18,13 +18,12 @@ const char* names[] = {"read", "write", "id", "literal", "gets",
                        "add", "sub", "mul", "div", "lparen", "rparen", "eof","if","while",
                         "end","eqeq","neq","gt","st","gtq","stq"};
 
-static token input_token;
 static int tokenNumber = 0; //Index of token reading in
-static token p_follow[] = {};
-static token sl_follow[]= 
+static token p_follow = {};
+static token sl_follow= {};
 static token s_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof};
 static token c_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof,t_end};
-static token e_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof,t_end,t_rparen,t_}
+static token e_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof,t_end,t_rparen};
 
 void program ();
 void stmt_list ();
@@ -79,8 +78,8 @@ int contains(token t, token set[]){
 */
 void error () {
 
-    cout << "Error detected: "++ names[input_token];
-    exit(1)
+    cout << "Error detected: "<< names[input_token];
+    exit(1);
 }
 
 void match (token expected) {
@@ -180,16 +179,17 @@ void expr () {
 }
 
 void cond (){
-    Node* lhs;
-    Node* rhs;
+    // Node* lhs;
+    // Node* rhs;
 
     switch(input_token){
         case t_id:
         case t_literal:
-            lhs = expr();
-            ro = rela_op();
-            rhs = expr();
+            // lhs = expr();
+            // ro = rela_op();
+            // rhs = expr();
         case t_lparen:
+        default : error ();
     }
 }
 
