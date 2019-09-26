@@ -15,7 +15,16 @@ static token input_token;
 
 
 const char* names[] = {"read", "write", "id", "literal", "gets",
-                       "add", "sub", "mul", "div", "lparen", "rparen", "eof","if","while"};
+                       "add", "sub", "mul", "div", "lparen", "rparen", "eof","if","while",
+                        "end","eqeq","neq","gt","st","gtq","stq"};
+
+static token input_token;
+static int tokenNumber = 0; //Index of token reading in
+static token p_follow[] = {};
+static token sl_follow[]= 
+static token s_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof};
+static token c_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof,t_end};
+static token e_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof,t_end,t_rparen,t_}
 
 void program ();
 void stmt_list ();
@@ -31,15 +40,53 @@ void mul_op ();
 void rela_op();
 void match();
 
+/*
+//Functions to help print the syntax trees including preIndent, postIndent, and prefix
+string postIndent(string str, int tab){
+  for(int i = 0; i <= tab; i++){
+    str += " ";
+  }
+  return str;
+}
 
+string preIndent(string str, int tab){
+  for(int i = 0; i <= tab; i++){
+    str = " " + str;
+  }
+  return str;
+}
+
+string prefix(string str, string tail){
+  if(tail == "") return str;
+  for (int i = 0; i < tail.length(); ++i){
+    if(tail[i] == ' '){
+      return tail.substr(0,i)+" "+ str +" "+ tail.substr(i+1, tail.length() - i);
+    }
+  }
+  return "prefix error";
+}
+//check if t is in the set[]
+int contains(token t, token set[]){
+  int i = 0;
+  while(set[i]){
+    if (t == set[i++]) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+*/
 void error () {
-    cout << "Please provide the number of nodes: ";
-    exit (1);
+
+    cout << "Error detected: "++ names[input_token];
+    exit(1)
 }
 
 void match (token expected) {
     if (input_token == expected) {
         cout << "matched " << names[input_token];
+        input_token = scan();
         if (input_token == t_id || input_token == t_literal)
             cout << ": " << token_image;
 
@@ -132,13 +179,19 @@ void expr () {
     }
 }
 
-// void cond (){
-//     switch(input_token){
-//         case t_id:
-//         case t_literal:
-//         case t_lparen:
-//     }
-// }
+void cond (){
+    Node* lhs;
+    Node* rhs;
+
+    switch(input_token){
+        case t_id:
+        case t_literal:
+            lhs = expr();
+            ro = rela_op();
+            rhs = expr();
+        case t_lparen:
+    }
+}
 
 void term_tail () {
     switch (input_token) {
