@@ -1,8 +1,11 @@
 #include<iostream>  
-#include <list> 
+#include <cstdlib>
 #include <iterator> 
 #include <string>
 #include "scan.h"
+#include <set>
+#include <map>
+
 using namespace std;
 
 /*
@@ -12,19 +15,23 @@ S -stmt
 */
 static token input_token;
 
-
-
 const char* names[] = {"read", "write", "id", "literal", "gets",
                        "add", "sub", "mul", "div", "lparen", "rparen", "eof","if","while",
                         "end","eqeq","neq","gt","st","gtq","stq"};
 
 static int tokenNumber = 0; //Index of token reading in
-static token p_follow = {};
-static token sl_follow= {};
-static token s_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof};
-static token c_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof,t_end};
-static token e_follow[] = {t_id,t_read,t_write,t_if,t_while,t_eof,t_end,t_rparen};
 
+
+static map<string,set<token> > first;
+static map<string,set<token> > follow;
+static set<string> eps;
+
+void generate_eps(){
+    eps = {"SL","TT","FL"};
+}
+
+void generate_first();
+void generate_follow();
 void program ();
 void stmt_list ();
 void stmt ();
@@ -39,6 +46,36 @@ void mul_op ();
 void rela_op();
 void match();
 
+
+void generate_first(){
+    first.insert(pair<string, set<token> >("P", {}));
+    first.insert(pair<string,set<token> >("SL",{t_id,t_read,t_write,t_if, t_while}));
+    first.insert(pair<string,set<token> >("S",{t_id,t_read,t_write,t_if,t_while}));
+    first.insert(pair<string,set<token> >("C",{t_lparen,t_id,t_lit}));
+    first.insert(pair<string,set<token>>("E",{t_lparen,t_id,t_lit}));
+    first.insert(pair<string,set<token>>("T",{t_lparen,t_id,t_lit}));
+    first.insert(pair<string,set<token>>("F",{t_lparen,t_id,t_lit}));
+    first.insert(pair<string,set<token>>("TT",{t_add,t_sub}));
+    first.insert(pair<string,set<token>>("FT",{t_mul,t_div}));
+    first.insert(pair<string,set<token>>("ro",{t_eqeq,t_neq,t_gt,t_st,t_gtq,t_stq}));
+    first.insert(pair<string,set<token>>("ao",{t_add,t_sub}));
+    first.insert(pair<string,set<token>>("mo",{t_mul,t_div}));
+}
+
+void generate_follow(){
+     follow.insert(pair<string, set<token>>("P", {}));
+     follow.insert(pair<string, set<token>>("SL", {t_end, t_eof}));
+     follow.insert(pair<string, set<token>>("S", {t_id, t_read, t_write, t_if, t_while, t_eof, t_end}));
+     follow.insert(pair<string, set<token>>("C", {t_id, t_read, t_write, t_if, t_while, t_end}));
+     follow.insert(pair<string, set<token>>("E", {t_id, t_read, t_write, t_if, t_while, t_eof, t_eq, t_noteq, t_greater, t_less, t_eqorgreater, t_eqorless, t_end, t>
+     follow.insert(pair<string, set<token>>("T", {t_add, t_sub, t_id, t_read, t_write, t_if, t_while, t_eof, t_eq, t_noteq, t_greater, t_less, t_eqorgreater, t_eqor>
+     follow.insert(pair<string, set<token>>("F", {t_mul, t_div, t_add, t_sub, t_id, t_read, t_write, t_if, t_while, t_eof, t_eq, t_noteq, t_greater, t_less, t_eqorg>
+     follow.insert(pair<string, set<token>>("TT", {t_id, t_read, t_write, t_if, t_while, t_eof, t_eq, t_noteq, t_greater, t_less, t_eqorgreater, t_eqorless, t_end, >
+     follow.insert(pair<string, set<token>>("FT", {t_add, t_sub, t_id, t_read, t_write, t_if, t_while, t_eof, t_eq, t_noteq, t_greater, t_less, t_eqorgreater, t_eqo>
+     follow.insert(pair<string, set<token>>("ro", {t_id, t_literal, t_lparen}));
+     follow.insert(pair<string, set<token>>("ao", {t_id, t_literal, t_lparen}));
+     follow.insert(pair<string, set<token>>("mo", {t_id, t_literal, t_lparen}));
+};
 /*
 //Functions to help print the syntax trees including preIndent, postIndent, and prefix
 string postIndent(string str, int tab){
@@ -78,24 +115,32 @@ int contains(token t, token set[]){
 */
 void error () {
 
-    cout << "Error detected: "<< names[input_token];
-    exit(1);
+    cout << "Error detected: "<< names[input_token] << "\n";
+    return;
 }
 
 void match (token expected) {
     if (input_token == expected) {
-        cout << "matched " << names[input_token];
+        // cout << "matched " << names[input_token];
         input_token = scan();
-        if (input_token == t_id || input_token == t_literal)
-            cout << ": " << token_image;
+        // if (input_token == t_id || input_token == t_literal)
+        //     cout << ": " << token_image;
 
-        cout << endl;
-        input_token = scan ();
+        // cout << endl;
+        // input_token = scan ();
+    }else if(input_token == t_eof){
+        cout << "end of line matched. \n"
+        return;
     }
-    else error ();
+    else{
+        cout << "token not matched. \n"
+        input_token = scan();
+        match(expected);
+    };
 }
 
 void program () {
+    error_recovery("P");
     switch (input_token) {
         case t_id:
         case t_read:
@@ -113,6 +158,7 @@ void program () {
 }
 
 void stmt_list () {
+    error_recovery("SL");
     switch (input_token) {
         case t_id:
         case t_read:
@@ -129,6 +175,7 @@ void stmt_list () {
 }
 
 void stmt () {
+    error_recovery("S");
     switch (input_token) {
         case t_id:
             cout << "predict stmt --> id gets expr\n";
@@ -166,6 +213,7 @@ void stmt () {
 }
 
 void expr () {
+    error_recovery("E");
     switch (input_token) {
         case t_id:
         case t_literal:
@@ -179,21 +227,22 @@ void expr () {
 }
 
 void cond (){
-    // Node* lhs;
-    // Node* rhs;
+    error_recovery("C");
 
     switch(input_token){
         case t_id:
         case t_literal:
-            // lhs = expr();
-            // ro = rela_op();
-            // rhs = expr();
         case t_lparen:
+            expr();
+            rela_op();
+            expr();
+            break;
         default : error ();
     }
 }
 
 void term_tail () {
+    error_recovery("TT");
     switch (input_token) {
         case t_add:
         case t_sub:
@@ -216,6 +265,7 @@ void term_tail () {
 }
 
 void term () {
+    error_recovery("T");
     switch (input_token) {
         case t_id:
         case t_literal:
@@ -229,6 +279,7 @@ void term () {
 }
 
 void factor_tail () {
+    error_recovery("FT");
     switch (input_token) {
         case t_mul:
         case t_div:
@@ -251,6 +302,7 @@ void factor_tail () {
 }
 
 void factor () {
+    error_recovery("F");
     switch (input_token) {
         case t_id :
             cout << ("predict factor --> id\n");
@@ -273,6 +325,7 @@ void factor () {
 
 
 void add_op () {
+    error_recovery("ao");
     switch (input_token) {
         case t_add:
             cout << ("predict add_op --> add\n");
@@ -287,6 +340,7 @@ void add_op () {
 }
 
 void mul_op () {
+    error_recovery("mo");
     switch (input_token) {
         case t_mul:
             cout << ("predict mul_op --> mul\n");
@@ -301,6 +355,7 @@ void mul_op () {
 }
 
 void rela_op() {
+    error_recovery("ro");
     switch (input_token){
         case t_eqeq:
             cout << ("predict rela_op --> eqeq\n");
@@ -329,9 +384,23 @@ void rela_op() {
     }
 }
 
+void error_recovery(string statement){
+    if(!(first.at(statement).counts(input_token) || eps.counts(statement))){
+        cout << "error \n";
+        do{
+            cout << "delete token \n" + names[input_token];
+            input_token = scan();
 
+        }while(!(first.at(statement).counts(input_token) || follow.at(statement).counts(input_token) || input_token == t_eof));
+    }
+}
 
 int main () {
+     first.insert(pair<string, set<token> >("P", {t_eof,t_id,t_read,t_write,t_if,t_while}));
+    // generate_first();
+    // generate_follow();
+    // generate_eps();
     input_token = scan ();
+    program();
   
 }
