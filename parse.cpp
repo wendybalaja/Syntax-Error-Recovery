@@ -1,10 +1,11 @@
-#include<iostream>  
+#include <iostream>  
 #include <cstdlib>
 #include <iterator> 
 #include <string>
 #include "scan.h"
 #include <set>
 #include <map>
+#include <list>
 
 using namespace std;
 
@@ -13,18 +14,34 @@ Dictionary:
 SL - stmt_list
 S -stmt
 */
-static token input_token;
+
+
+/* construct treeNode struct to build AST tree */
+class treeNode{
+    public:
+
+    string value;
+    list<treeNode> nodes;
+    treeNode(string v, list<treeNode> n){
+        value = v;
+        nodes = n;
+    } 
+};
 
 const string  names[] = {"read", "write", "id", "literal", "gets",
                        "add", "sub", "mul", "div", "lparen", "rparen", "eof","if","while",
                         "end","eqeq","neq","gt","st","gtq","stq"};
 
-
+static token input_token;
 static bool isError;
 static map<string,set<token> > first;
 static map<string,set<token> > follow;
 static set<string> eps;
+static list<treeNode> emptyL;
+static treeNode * root = new treeNode("program",emptyL);
+static treeNode * emptyN = new treeNode("",emptyL);
 
+static bool isValidProgram = true;
 void generate_eps(){
     eps = {"SL","TT","FT"};
 }
@@ -32,18 +49,18 @@ void generate_eps(){
 void generate_first();
 void generate_follow();
 void program ();
-void stmt_list ();
-void stmt ();
-void expr ();
-void cond();
-void term_tail ();
-void term ();
-void factor_tail ();
-void factor ();
-void add_op ();
-void mul_op ();
-void rela_op();
-void match();
+treeNode* stmt_list (treeNode* input_node);
+treeNode* stmt ();
+treeNode* expr ();
+treeNode* cond();
+treeNode* term_tail (treeNode* input_node);
+treeNode* term ();
+treeNode* factor_tail (treeNode* input_node);
+treeNode* factor ();
+treeNode* add_op ();
+treeNode* mul_op ();
+treeNode* rela_op();
+string match(token expected);
 void error_recovery(string str);
 
 void generate_first(){
@@ -122,23 +139,36 @@ void error (string statement) {
     return;
 }
 
-void match (token expected) {
+string match (token expected) {
     if (input_token == expected) {
-         cout << "matched " << names[input_token] << "\n";
+        cout << "matched " << names[input_token] << "\n";
+        
+        //treeNode node = new treeNode(value, nodes);
+	string value = "";
+        if (input_token == t_id){
+	  value.append("id ");
+          value.append("\"");
+          value.append(token_image);
+          value.append("\"");
+        }else if(input_token == t_literal){
+	 value.append("num ");
+	 value.append("\"");
+	 value.append(token_image);
+	 value.append( "\""); 
+	}
+	else{
+	//value.append(names[input_token]);
+	value.append(token_image);
+	}
+	value = " "+value;
         input_token = scan();
-        // if (input_token == t_id || input_token == t_literal)
-        //     cout << ": " << token_image;
-
-        // cout << endl;
-        // input_token = scan ();
+        return value;
     }else if(input_token == t_eof){
-        cout << "end of line matched. \n";
-        return;
+        return "";
     }
     else{
         cout << "token not matched. \n";
-        input_token = scan();
-        match(expected);
+        throw "match error";
     };
 }
 
@@ -150,138 +180,246 @@ void program () {
         case t_write:
         case t_if:
         case t_while:
-	case t_eof:
-	if(isError){
-        cout << "deleted tokens found matching token in P \n";
-        }     
-       cout << "predict program --> stmt_list eof\n";
-            stmt_list ();
-           match (t_eof);
+        case t_eof:{
+            if(isError){
+                cout << "deleted tokens found matching token in P \n";
+            }   
+            cout << "predict program --> stmt_list eof\n";
+	    list<treeNode> list;
+	    treeNode * node = new treeNode("8u",list);
+            root->nodes.push_back((*stmt_list(node)));
+           //stmt_list ();
+            treeNode endNode = * new treeNode(match(t_eof),emptyL);
+            //root->nodes.push_back(endNode);
+            //match (t_eof);
             break;
+        }
     // MEIWEN: adding if and while conditions
         default: error ("P");
     }
 }
 
-void stmt_list () {
+
+/* tree printing function */
+string printTree (treeNode * root){
+	if((root->nodes).empty()){
+	    return "(" + root->value + ")";
+	}
+	
+	string str="";
+	if(root->value.compare( "8u")!=0){
+	 str = "(" + root->value;
+	}	
+	else{
+	str = "[";
+	}
+	for(treeNode child : root-> nodes){
+		str = str + printTree(&child);
+	}
+        if(root->value.compare( "8u")!=0){
+        str = str + ")";
+
+        }else{ 
+        str = str + "]";
+        }
+
+	return str;
+}
+
+
+treeNode* stmt_list (treeNode* input_node) {
     error_recovery("SL");
     switch (input_token) {
         case t_id:
         case t_read:
-        case t_write:
-            cout << "predict stmt_list --> stmt stmt_list\n";
-            stmt ();
-            stmt_list ();
-            break;
+	case t_if:
+	case t_while:
+        case t_write:{
+                cout << "predict stmt_list --> stmt stmt_list\n";
+
+            input_node->nodes.push_back((*stmt()));
+           //(*stmt_list(input_node)));
+            //stmt ();
+            //stmt_list ();
+            //break;
+	    return stmt_list(input_node);
+            }
+	case t_end:
         case t_eof:
             cout << "predict stmt_list --> epsilon\n";
-            break;          /*  epsilon production */
-        default: error ("SL");
+            return input_node;         /*  epsilon production */
+        default: {
+            error ("SL");
+            return input_node;
+        }
     }
 }
 
-void stmt () {
+treeNode* stmt () {
     error_recovery("S");
     switch (input_token) {
-        case t_id:
-		   if(isError){
-        cout << "deleted tokens found matching token in S \n";
-        } 
+        case t_id:{
+            if(isError){
+                cout << "deleted tokens found matching token in S \n";
+            } 
             cout << "predict stmt --> id gets expr\n";
-            match (t_id);
-            match (t_gets);
-            expr ();
-            break;
-        case t_read:
-	   if(isError){
-        cout << "deleted tokens found matching token in S \n";
-        } 
+    
+            treeNode * idNode = new treeNode(match(t_id),emptyL);
+            treeNode * getsNode = new treeNode(match(t_gets),emptyL);
+           // treeNode * node = new treeNode("",emptyL);
+            getsNode->nodes.push_front(*idNode);
+            getsNode->nodes.push_back(*expr());
+            //match (t_id);
+            //match (t_gets);
+            //expr ();
+            return getsNode;
+        }
+        case t_read:{
+             if(isError){
+                cout << "deleted tokens found matching token in S \n";
+            } 
             cout << "predict stmt --> read id\n";
-            match (t_read);
-            match (t_id);
-            break;
-        case t_write:
-	   if(isError){
-        cout << "deleted tokens found matching token in S \n";
-        } 
+            treeNode * readNode = new treeNode(match(t_read),emptyL);
+            treeNode * idNode = new treeNode(match(t_id),emptyL);
+            treeNode * node = new treeNode("",emptyL);
+            node->nodes.push_front(*readNode);
+            node->nodes.push_back(*idNode);
+            // match (t_read);
+            // match (t_id);
+            // break;
+            return node;
+        }
+        case t_write:{
+            if(isError){
+                cout << "deleted tokens found matching token in S \n";
+            } 
             cout << "predict stmt --> write expr\n";
-            match (t_write);
-            expr ();
-            break;
-        case t_if:
-	   if(isError){
-        cout << "deleted tokens found matching token in S \n";
+
+            treeNode * node = new treeNode("",emptyL);
+            treeNode * writeNode = new treeNode(match(t_write),emptyL);
+            node->nodes.push_front(*writeNode);
+            node->nodes.push_back((*expr()));
+            // match (t_write);
+            // expr ();
+            // break;
+            return node;
+        }
+        case t_if:{
+	        if(isError){
+                cout << "deleted tokens found matching token in S \n";
+            } 
+            cout << "predict stmt --> if c sl end\n";
+	    
+	    list<treeNode> l;
+	    list<treeNode> l2;
+	    treeNode * node = new treeNode("",l);
+            treeNode * SLnode = new treeNode("8u",l2);
+            treeNode * ifNode = new treeNode(match(t_if),emptyL);
+            node->nodes.push_front(*ifNode);
+            node->nodes.push_back((*cond ()));
+            node->nodes.push_back((*stmt_list(SLnode)));
+            treeNode * endNode = new treeNode(match(t_end),emptyL);
+            node->nodes.push_back(*endNode);
+            //match(t_if);
+            //cond ();
+            //stmt_list();
+            //match( ";t_end);
+            return node;}
+        case t_while:{
+           if(isError){
+                cout << "deleted tokens until found matching token in S \n";
+            } 
+            cout << "predict stmt --> while c sl end\n";
+	    
+	    list<treeNode> l;
+	    list<treeNode> l2;
+	    treeNode * node = new treeNode("",l2);
+            treeNode * SLnode = new treeNode("8u",l);
+            treeNode * whileNode = new treeNode(match(t_while),emptyL);
+            node->nodes.push_front(*whileNode);
+            node->nodes.push_back((*cond ()));
+            node->nodes.push_back((*stmt_list(SLnode)));
+            treeNode * endNode = new treeNode(match(t_end),emptyL);
+            node->nodes.push_back(*endNode);
+
+            //match(t_while);
+            //cond();
+            //stmt_list();
+            //match(t_eof);
+            return node;     
+        }
+        default:{
+           error ("S");
+           return emptyN;     
         } 
-            cout << "predict stmt --> if expr\n";
-            match(t_if);
-            // TODO: need to initiate C prouction here
-            //c();
-            stmt_list();
-            match(t_eof);
-            break;
-        case t_while:
-	   if(isError){
-        cout << "deleted tokens until found matching token in S \n";
-        } 
-            cout << "predict stmt --> while expr\n";
-            match(t_while);
-           // c();
-            stmt_list();
-            match(t_eof);
-            break;
-        default: error ("S");
     }
 }
 
-void expr () {
+treeNode* expr () {
     error_recovery("E");
     switch (input_token) {
         case t_id:
         case t_literal:
-        case t_lparen:
-     if(isError){
-        cout << "deleted found matching token in E \n";
+        case t_lparen:{
+            if(isError){
+                cout << "deleted found matching token in E \n";
+            }
+            cout << "predict expr --> term term_tail\n";
+            // term ();
+            // term_tail ();
+            // break;
+            return term_tail(term());
         }
-
-
-cout << "predict expr --> term term_tail\n";
-            term ();
-            term_tail ();
-            break;
-        default: error ("E");
+        default: {
+            error ("E");
+            return emptyN;
+        }
     }
 }
 
-void cond (){
+treeNode* cond (){
     error_recovery("C");
 
     switch(input_token){
         case t_id:
         case t_literal:
-        case t_lparen:
-     if(isError){
-        cout << "deleted found matching token in C \n";
+        case t_lparen:{
+            if(isError){
+                cout << "deleted found matching token in C \n";
+            }
+
+            treeNode expNode = ((*expr()));
+            treeNode * node = rela_op();
+	    node->nodes.push_front(expNode);
+            node->nodes.push_back((*expr()));
+            // expr();
+            // rela_op();
+            // expr();
+            // break;
+            return node;
         }
-
-
-            expr();
-            rela_op();
-            expr();
-            break;
-        default : error ("C");
+        default : {
+            error ("C");
+            return emptyN;
+        }
     }
 }
 
-void term_tail () {
+treeNode* term_tail (treeNode* input_node) {
     error_recovery("TT");
     switch (input_token) {
         case t_add:
-        case t_sub:
+        case t_sub:{
             cout << "predict term_tail --> add_op term term_tail\n";
-            add_op ();
-            term ();
-            term_tail ();
-            break;
+            treeNode * node = add_op();
+            node->nodes.push_front(*input_node);
+            node->nodes.push_back((*term_tail(term())));
+            return node;
+            // add_op ();
+            // term ();
+            // term_tail ();
+            // break;
+	}
         case t_rparen:
         case t_id:
         case t_read:
@@ -295,45 +433,100 @@ void term_tail () {
         case t_gtq:
         case t_stq:
         case t_end:
-        case t_eof:
-     if(isError){
-        cout << "deleted found matching token in TT \n";
-        }
-
+        case t_eof:{
+            if(isError){
+                cout << "deleted found matching token in TT \n";
+             }
             cout << "predict term_tail --> epsilon\n";
-            break;          /*  epsilon production */
-        default: error ("TT");
+            return input_node;         /*  epsilon production */
+        }
+        default:{
+             error ("TT");
+             return emptyN;
+            } 
     }
 }
 
-void term () {
+treeNode* term () {
     error_recovery("T");
     switch (input_token) {
         case t_id:
         case t_literal:
-        case t_lparen:
- if(isError){
-        cout << "deleted found matching token in T \n";
-        }
-
+        case t_lparen:{  
+            if(isError){
+                cout << "deleted found matching token in T \n";
+            }
             cout << "predict term --> factor factor_tail\n";
-            factor ();
-            factor_tail ();
-            break;
-        default: error ("T");
+            // factor ();
+            // factor_tail ();
+            // break;}
+            return factor_tail(factor());
+	}
+        default: {
+            error ("T");
+            return emptyN;
+        }
     }
 }
 
-void factor_tail () {
+treeNode* factor () {
+    error_recovery("F");
+    switch (input_token) {
+        case t_id :{
+            if(isError){
+                cout << "deleted found matching token in FT \n";
+            }
+            
+            cout << ("predict factor --> id\n");
+            treeNode * node = new treeNode(match(t_id), emptyL);
+            return node;
+        } 
+        case t_literal: {
+            if(isError){
+                cout << "deleted found matching token in FT \n";
+            }
+
+            cout << ("predict factor --> literal\n");
+            treeNode * node = new treeNode(match(t_literal), emptyL);
+            return node;
+        }
+
+        case t_lparen:{
+            if(isError){
+                cout << "deleted found matching token in FT \n";
+                }
+
+            cout << ("predict factor --> lparen expr rparen\n");
+
+            treeNode * nodeFront = new treeNode(match(t_lparen),emptyL);
+            treeNode * nodeEnd = new treeNode(match(t_rparen), emptyL);
+            list<treeNode> nodeList;
+            nodeList.push_front(*nodeFront);
+            nodeList.push_back(*nodeEnd);
+            treeNode * node = new treeNode("",nodeList);
+            
+            return node;
+            } 
+        default:{
+            error ("F");
+            return emptyN;
+        }
+    }
+}
+
+treeNode* factor_tail (treeNode* input_node) {
     error_recovery("FT");
     switch (input_token) {
         case t_mul:
-        case t_div:
+        case t_div:{
             printf ("predict factor_tail --> mul_op factor factor_tail\n");
-            mul_op ();
-            factor ();
-            factor_tail ();
-            break;
+            
+            treeNode * node = mul_op();
+            node->nodes.push_front(*input_node);
+            node->nodes.push_back((*factor_tail(factor())));
+          
+            return node;
+        }
         case t_add:
         case t_sub:
         case t_rparen:
@@ -350,153 +543,133 @@ void factor_tail () {
         case t_end:
         case t_write:
         case t_eof:
- if(isError){
-        cout << "deleted found matching token in FT \n";
-        }
+            if(isError){
+                cout << "deleted found matching token in FT \n";
+            }
 
-             cout << "predict factor_tail --> epsilon\n";
-            break;          /*  epsilon production */
-        default: error ("FT");
-    }
-}
-void factor () {
-    error_recovery("F");
-    switch (input_token) {
-        case t_id :
-     if(isError){
-        cout << "deleted found matching token in FT \n";
-        }
-
-            cout << ("predict factor --> id\n");
-            match (t_id);
-            break;
-        case t_literal: if(isError){
-        cout << "deleted found matching token in FT \n";
-        }
-
-            cout << ("predict factor --> literal\n");
-            match (t_literal);
-            break;
-        case t_lparen: if(isError){
-        cout << "deleted found matching token in FT \n";
-        }
-
-            cout << ("predict factor --> lparen expr rparen\n");
-            match (t_lparen);
-            expr ();
-            match (t_rparen);
-            break;
-        default: error ("F");
+            cout << "predict factor_tail --> epsilon\n";
+            return input_node;        /*  epsilon production */
+        default:{
+            error ("FT");
+            return emptyN;
+        } 
     }
 }
 
-
-
-void add_op () {
+treeNode* add_op () {
     error_recovery("ao");
     switch (input_token) {
-        case t_add:
- if(isError){
+        case t_add:{
+        if(isError){
         cout << "deleted found matching token in ao \n";
         }
-
             cout << ("predict add_op --> add\n");
-            match (t_add);
-            break;
-        case t_sub:
- if(isError){
+            treeNode * node = new treeNode(match(t_add), emptyL);
+            return node;
+	}
+        case t_sub:{
+        if(isError){
         cout << "deleted found matching token in ao \n";
         }
-
             cout << ("predict add_op --> sub\n");
-            match (t_sub);
-            break;
-        default: error ("ao");
+            treeNode * node = new treeNode(match(t_sub), emptyL);
+            return node;
+	}
+        default:{
+            error ("ao"); 
+            return emptyN;
+        } 
     }
 }
 
-
-
-void mul_op () {
+treeNode* mul_op () {
     error_recovery("mo");
     switch (input_token) {
-        case t_mul:
- if(isError){
+        case t_mul:{
+        if(isError){
         cout << "deleted found matching token in mo \n";
         }
-
             cout << ("predict mul_op --> mul\n");
-            match (t_mul);
-            break;
-        case t_div:
- if(isError){
+            treeNode * node = new treeNode(match(t_mul), emptyL);
+            return node;
+	}
+        case t_div:{
+        if(isError){
         cout << "deleted found matching token in mo \n";
         }
-
             cout << ("predict mul_op --> div\n");
-            match (t_div);
-            break;
-        default: error ("mo");
+            treeNode * node = new treeNode(match(t_div), emptyL);
+            return node;
+	}
+        default: {
+            error ("mo");
+            return emptyN;
+        }
     }
 }
 
-void rela_op() {
+treeNode* rela_op() {
     error_recovery("ro");
     switch (input_token){
-        case t_eqeq:
- if(isError){
+        case t_eqeq:{
+        if(isError){
         cout << "deleted found matching token in ro \n";
         }
-
             cout << ("predict rela_op --> eqeq\n");
-            match (t_eqeq);
-            break;
-        case t_neq:
- if(isError){
+            treeNode * node = new treeNode(match(t_eqeq), emptyL);
+            return node;
+        }
+        case t_neq:{
+        if(isError){
         cout << "deleted found matching token in ro \n";
         }
 
             cout << ("predict rela_op --> neq\n");
-            match (t_neq);
-            break;
-        case t_gt:
- if(isError){
+            treeNode * node = new treeNode(match(t_neq), emptyL);
+            return node;
+        }
+        case t_gt:{
+        if(isError){
         cout << "deleted found matching token in ro \n";
         }
 
             cout << ("predict rela_op --> gt\n");
-            match (t_gt);
-            break;
-        case t_st:
- if(isError){
+            treeNode * node = new treeNode(match(t_gt), emptyL);
+            return node;
+        }
+        case t_st:{
+        if(isError){
         cout << "deleted found matching token in ro \n";
         }
 
             cout << ("predict rela_op --> st\n");
-            match (t_st);
-            break;
-       case t_gtq:
- if(isError){
-        cout << "deleted found matching token in ro \n";
+            treeNode * node = new treeNode(match(t_st), emptyL);
+            return node;
         }
-
+       case t_gtq:{
+        if(isError){
+                cout << "deleted found matching token in ro \n";
+            }
             cout << ("predict rela_op --> gta\n");
-            match (t_gtq);
-            break;   
-       case t_stq:
- if(isError){
-        cout << "deleted found matching token in ro \n";
-        }
+            treeNode * node = new treeNode(match(t_gtq), emptyL);
+            return node;
+       }
+       case t_stq:{
+            if(isError){
+                cout << "deleted found matching token in ro \n";
+            }
 
             cout << ("predict rela_op --> stq\n");
-            match (t_stq);
-            break;     
-        default: error("ro");
+            treeNode * node = new treeNode(match(t_stq), emptyL);
+            return node;
+       }   
+        default:{
+            error("ro");
+            return emptyN;
+            }; 
     }
 
 }
-
-
 
 void error_recovery(string statement){
     if(!(first.at(statement).count(input_token) || eps.count(statement))){
@@ -505,6 +678,7 @@ void error_recovery(string statement){
             cout << "delete token " + names[input_token] << "\n";
             input_token = scan();
 	}
+	isValidProgram = false;
 	isError = true;
 	return;
     }
@@ -517,5 +691,6 @@ int main () {
     generate_eps();
     input_token = scan ();
     program();
-  
+
+  if(isValidProgram)cout <<  printTree(root);
 }
