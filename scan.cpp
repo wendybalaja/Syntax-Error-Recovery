@@ -49,36 +49,56 @@ token scan() {
                 cout << stderr << "error\n";
                 exit(1);
             } else {
+		//Add token_image
+		token_image[0] = ':';
+		token_image[1]= '=';
+		token_image[2]= '\0';
                 c = getchar();
                 return t_gets;
             }
             break;
-        case '+': c = getchar(); return t_add;
-        case '-': c = getchar(); return t_sub;
-        case '*': c = getchar(); return t_mul;
-        case '/': c = getchar(); return t_div;
-        case '(': c = getchar(); return t_lparen;
-        case ')': c = getchar(); return t_rparen;
+        case '+': token_image[i++] = c; token_image[1]='\0'; c = getchar(); return t_add;
+        case '-': token_image[i++] = c; token_image[1]='\0';c = getchar(); return t_sub;
+        case '*': token_image[i++] = c; token_image[1]='\0';c = getchar(); return t_mul;
+        case '/': token_image[i++] = c; token_image[1]='\0';c = getchar(); return t_div;
+        case '(': token_image[i++] = c; token_image[1]='\0';c = getchar(); return t_lparen;
+        case ')': token_image[i++] = c; token_image[1]='\0';c = getchar(); return t_rparen;
         case '<': 
             if((c = getchar()) == '='){
-                c = getchar();
+		token_image[0]='<';
+		token_image[1] ='=';
+		token_image[2]='\0'; 
+                c = getchar(); 
                 return t_stq;
             }
             else {
+		 token_image[0]='<';
+                token_image[1]='\0'; 
+
                 c = getchar();
                 return t_st;
             };
         case '>': 
             if((c = getchar()) == '='){
-                c = getchar();
+                 token_image[0]='>';
+                token_image[1] ='='; 
+                token_image[2]='\0'; 
+
+		c = getchar();
                 return t_gtq;
             }
             else {
+		token_image[0] == '>';
+		token_image[1] == '\0';
                 c = getchar();
                 return t_gt;
             }; 
         case '=': 
             if((c = getchar()) == '='){
+		token_image[0]='=';
+                token_image[1] ='='; 
+                token_image[2]='\0'; 
+
                 c = getchar();
                 return t_eqeq;
             }
@@ -88,7 +108,11 @@ token scan() {
             };
         case '!': 
             if((c = getchar()) == '='){
-                c = getchar();
+	        token_image[0]='!';
+                token_image[1] ='='; 
+                token_image[2]='\0'; 
+
+              c = getchar();
                 return t_neq;
             }
             else {
