@@ -5,7 +5,7 @@ NetID: selsaid
 Partner Name : Meiwen Zhou
 NetID: mzhou26
 
-What we have in the folder: 
+*What we have in the folder*: 
 1) README
 2) Makefile
 3) parse.cpp
@@ -14,6 +14,7 @@ What we have in the folder:
 6) #parse.cpp#
 7) input.txt (a tester with valid program ->  will print tree)
 8) input2.txt (a tester file with invalid program -> will NOT print tree)
+
 *compile instructions*:
 
 	while in directory 
@@ -50,7 +51,7 @@ What we have in the folder:
 	1)It works perfectly fine on recognizing valid program, and will generate a linear tree representation
 	2)It works perfectly fine on checking errors. It will prompt the user there is an error, keep examing, until it finds another piece of readable code. 
 
-*sample out put* :
+*sample out put*:
 
 INPUT: 
    read n
